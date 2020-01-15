@@ -1,0 +1,110 @@
+---
+title: "Preyfish_Diversity_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+```
+
+```{r}
+bzs_preyfish <- read_csv("preyfish_2019_raw.csv")
+head(bzs_preyfish)
+bzs_preyfish_clean <- filter(bzs_preyfish, size<20, density>0, depth!=45, site!= "North Northeast")
+head(bzs_preyfish_clean)
+```
+
+```{r}
+library(dplyr)
+bzs_preyfish_final <- bzs_preyfish_clean %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+head(bzs_preyfish_final)
+```
+
+```{r}
+library(dbplyr)
+preyfish_richness <- bzs_preyfish_final %>% group_by(year, site, depth, transect) %>% summarise(richness = n_distinct(species))
+head(preyfish_richness)
+```
+
+```{r}
+library(vegan)
+preyfish_diversity <- bzs_preyfish_final %>% group_by(year, site, depth, transect) %>% summarise(diversity = diversity(density, "shannon"))
+head(preyfish_diversity)
+```
+
+```{r}
+mean_diversity_depth <-ggplot(data = preyfish_diversity, aes(x = depth, y=diversity, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Diversity (Shannon Index)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_diversity_depth
+ggsave(filename = "mean_diversity_depth.eps",plot = mean_diversity_depth, device = "eps",width = 6,height = 4,dpi = 600)
+diversity_depth_year=aggregate(diversity~year, data=preyfish_diversity, FUN=mean)
+diversity_depth_year
+```
+
+```{r}
+mean_diversity <-ggplot(data = preyfish_diversity, aes(x = depth, y=diversity, fill = depth)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Diversity (Shannon Index)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Blues") +theme_classic() + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_diversity
+ggsave(filename = "mean_diversity.eps",plot = mean_diversity, device = "eps",width = 6,height = 4,dpi = 600)
+diversity_depth=aggregate(diversity~depth, data=preyfish_diversity, FUN=mean)
+diversity_depth
+```
+
+```{r}
+mean_richness_depth <-ggplot(data = preyfish_richness, aes(x = depth, y=richness, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Richness", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_richness_depth
+ggsave(filename = "mean_richness_depth.eps",plot = mean_richness_depth, device = "eps",width = 6,height = 4,dpi = 600)
+richness_depth_year=aggregate(richness~depth, data=preyfish_richness, FUN=mean)
+richness_depth_year
+```
+
+```{r}
+mean_richness <-ggplot(data = preyfish_richness, aes(x = depth, y=richness, fill = depth)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Richness", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Blues") +theme_classic() + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_diversity
+ggsave(filename = "mean_richness.eps",plot = mean_richness, device = "eps",width = 6,height = 4,dpi = 600)
+richness_depth=aggregate(richness~depth, data=preyfish_richness, FUN=mean)
+richness_depth
+```
+
+```{r}
+mean_diversity_year <-ggplot(data = preyfish_diversity, aes(x = year, y=diversity, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Diversity (Shannon Index)", x = "Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired") +theme_classic() + theme(legend.position = "none")
+mean_diversity_year
+ggsave(filename = "mean_diversity_year.eps",plot = mean_diversity_year, device = "eps",width = 6,height = 4,dpi = 600)
+diversity_year=aggregate(diversity~year, data=preyfish_diversity, FUN=mean)
+diversity_year
+```
+
+```{r}
+mean_richness_year <-ggplot(data = preyfish_richness, aes(x = year, y=richness, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Richness", x = "Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired") +theme_classic() + theme(legend.position = "none")
+mean_diversity_year
+ggsave(filename = "mean_richness_year.eps",plot = mean_richness_year, device = "eps",width = 6,height = 4,dpi = 600)
+richness_year=aggregate(richness~year, data=preyfish_richness, FUN=mean)
+richness_year
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

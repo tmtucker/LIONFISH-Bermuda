@@ -1,0 +1,126 @@
+---
+title: "Lionfish_Site_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+```
+
+```{r}
+lion.site=read.csv('lionfish.site.csv')
+site_clean <- filter(lion.site, site!= "North Northeast")
+site <- site_clean %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+```
+
+```{r}
+lionfish_site_year_depth <-ggplot(data= site, aes(x= year, y= per.hec, fill= year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se) + scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") + facet_grid(depth~site) + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_site_year_depth
+ggsave(filename = "lionfish_site_year_depth.eps",plot = lionfish_site_year_depth, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+lionfish_depth_year <-ggplot(data = site, aes(x = depth, y=per.hec, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_depth_year
+ggsave(filename = "lionfish_depth_year.eps",plot = lionfish_depth_year, device = "eps",width = 6,height = 4,dpi = 600)
+lion_depth=aggregate(per.hec~depth, data=site, FUN=mean)
+lion_depth
+```
+```{r}
+library(sciplot)
+library(car)
+library(multcompView)
+```
+
+```{r}
+lionfish_depth <- aov(sqrt(sqrt(log(log(per.hec+1)))) ~ depth, data = site)
+shapiro.test(lionfish_depth$residuals)
+summary.aov(lionfish_depth)
+TukeyHSD(lionfish_depth)
+```
+
+
+```{r}
+lionfish_year <-ggplot(data = site, aes(x = site, y=per.quad, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Survey Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_year
+lion_year=aggregate(per.hec~year*depth, data=site, FUN="mean")
+lion_year
+```
+
+```{r}
+lionfish_site_year <-ggplot(data = site, aes(x = site, y=per.hec, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_site_year
+ggsave(filename = "lionfish_site_year.eps",plot = lionfish_site_year, device = "eps",width = 7,height = 4,dpi = 600)
+lion_site=aggregate(per.hec~site*year, data=site, FUN=mean)
+lion_site
+```
+```{r}
+site_sixty_clean <- filter(site_clean, depth=="60") %>%
+  mutate(year=as.factor(survey))
+lionfish_site_sixty <-ggplot(data = site_sixty_clean, aes(x = site, y=per.hec, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_site_sixty
+ggsave(filename = "lionfish_site_sixty.eps",plot = lionfish_site_sixty, device = "eps",width = 8,height = 4,dpi = 600)
+lion_sixty=aggregate(per.hec~site*year, data=site_sixty_clean, FUN=mean)
+lion_sixty
+```
+
+```{r}
+lion.transect=read.csv('lionfish_den_60m.csv')
+transect_clean <- filter(lion.transect, site!= "North Northeast")
+transect <- transect_clean %>%
+  mutate(year=as.factor(survey))
+```
+
+```{r}
+lionfish_transect_60m <-ggplot(data = transect, aes(x = site, y=density, fill= year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") +labs(y = "Mean Density (#/60 m^2)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) + theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) 
+lionfish_transect_60m
+ggsave(filename = "lionfish_transect_60m.eps",plot = lionfish_transect_60m, device = "eps",width = 7,height = 4,dpi = 600)
+lion_transect=aggregate(density~site*year, data=transect, FUN=mean)
+lion_transect
+```
+
+```{r}
+library(sciplot)
+library(car)
+library(multcompView)
+```
+
+
+
+```{r}
+lionfish.model= glm(per.hec~site*depth, data=site)
+summary(lionfish.model)
+site.model= glm(per.hec~year*site, data=site)
+summary(site.model)
+depth.model= glm(per.hec~year*depth, data=site)
+summary(depth.model)
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

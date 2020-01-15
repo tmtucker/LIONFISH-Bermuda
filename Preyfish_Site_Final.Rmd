@@ -1,0 +1,247 @@
+---
+title: "Preyfish_Site_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+```
+```{r}
+bzs_preyfish <- read_csv("preyfish_2019_raw.csv")
+head(bzs_preyfish)
+bzs_preyfish_clean <- filter(bzs_preyfish, size<20, density>0, depth!=45, site!= "North Northeast")
+head(bzs_preyfish_clean)
+```
+```{r}
+library(dplyr)
+bzs_preyfish_final <- bzs_preyfish_clean %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+head(bzs_preyfish_final)
+```
+```{r}
+library(dbplyr)
+mean_preyfish <- bzs_preyfish_final %>% group_by(year, site, depth, transect) %>% summarise(total_den = sum(density), total_bio = sum(biomass))
+head(mean_preyfish)
+```
+
+```{r}
+library(dbplyr)
+mean_trophic <- bzs_preyfish_final %>% group_by(year, site, depth, transect, trophic_guild) %>% summarise(total_den = mean(density), total_bio = mean(biomass))
+head(mean_trophic)
+``` 
+```{r}
+biomass_trophicguild <- ggplot (data = mean_trophic, aes(x = year, y=total_bio, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "fill", color = "black") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic Guild")) + theme_classic() + labs(y="Mean % Contribution by Biomass", x = "Survey Year") + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+biomass_trophicguild
+ggsave(filename = "biomass_trophicguild.eps", plot = biomass_trophicguild, device = "eps", width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+density_trophicguild <-ggplot(data = mean_trophic, aes(x = year, y=total_den, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "fill", color = "black") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic guild")) + theme_classic() + labs(y="Mean % Contribution by Density", x = "Survey Year") + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+density_trophicguild
+ggsave(filename = "density_trophicguild.eps",plot = density_trophicguild, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+mean_biomass_depth <-ggplot(data = mean_preyfish, aes(x = depth, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Biomass (g)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_biomass_depth
+ggsave(filename = "mean_biomass_depth.eps",plot = mean_biomass_depth, device = "eps",width = 6,height = 4,dpi = 600)
+biomass_depth=aggregate(total_bio~depth*year, data=mean_preyfish, FUN=mean)
+biomass_depth
+```
+
+```{r}
+mean_density_depth <-ggplot(data = mean_preyfish, aes(x = depth, y=total_den, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/60m^2)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_density_depth
+ggsave(filename = "mean_density_depth.eps",plot = mean_density_depth, device = "eps",width = 6,height = 4,dpi = 600)
+density_depth=aggregate(total_den~depth*year, data=mean_preyfish, FUN=mean)
+density_depth
+```
+```{r}
+trophic_density_depth <-ggplot(data = mean_trophic, aes(x = depth, y=total_den, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "fill", color = "black") + labs(y = "Mean % Contribution by Density", x = "Depth (m)") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic guild")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) 
+trophic_density_depth
+ggsave(filename = "mean_density_depth.eps",plot = mean_density_depth, device = "eps",width = 6,height = 4,dpi = 600)
+```
+```{r}
+trophic_biomass_depth <-ggplot(data = mean_trophic, aes(x = site, y=total_bio, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "stack", color = "black") + labs(y = "Mean % Contribution by Biomass", x = "Site") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic Guild")) +theme_bw() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + facet_grid(year~.)
+trophic_biomass_depth
+ggsave(filename = "trophic_biomass_depth.eps",plot = trophic_biomass_depth, device = "eps",width = 8,height = 4,dpi = 600)
+```
+
+```{r}
+trophic_biomass_depth_year <-ggplot(data = mean_trophic, aes(x = depth, y=total_bio, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "stack", color = "black") + labs(y = "Mean % Contribution by Biomass", x = "Depth (m)") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic Guild")) +theme_bw() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + facet_grid(year~.)
+trophic_biomass_depth_year
+ggsave(filename = "trophic_biomass_depth_year.eps",plot = trophic_biomass_depth_year, device = "eps",width = 7,height = 4,dpi = 600)
+```
+
+```{r}
+density_depth_year <-ggplot(data = mean_preyfish, aes(x = depth, y=total_den, fill = depth)) + geom_bar(stat = "summary", fun.y = "mean", position = "stack", color = "black") + labs(y = "Mean Density", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Blues") +theme_bw() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + facet_grid(year~.)
+density_depth_year
+```
+
+```{r}
+mean_biomass_overall <-ggplot(data = mean_preyfish, aes(x = year, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Biomass (g)", x = "Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired") +theme_classic() + theme(legend.position = "none")+theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_biomass_overall
+ggsave(filename = "mean_biomass_overall.eps",plot = mean_biomass_overall, device = "eps",width = 6,height = 4,dpi = 600)
+biomass_year=aggregate(total_bio~year, data=mean_preyfish, FUN=mean)
+biomass_year
+```
+
+```{r}
+mean_density_overall <-ggplot(data = mean_preyfish, aes(x = year, y=total_den, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/60m^2)", x = "Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired") +theme_classic() + theme(legend.position = "none")+theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_density_overall
+ggsave(filename = "mean_density_overall.eps",plot = mean_density_overall, device = "eps",width = 6,height = 4,dpi = 600)
+density_year=aggregate(total_den~year, data=mean_preyfish, FUN=mean)
+density_year
+```
+
+```{r}
+biomass_site_depth_year <-ggplot(mean_preyfish, aes(year, total_bio)) + geom_bar(aes(fill = depth, alpha = year), position = "dodge", stat = "summary", fun.y = "mean", color = "black") + labs(y = "Mean Biomass (g)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se)+
+  scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") +
+  facet_grid(depth~site)  + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+biomass_site_depth_year
+ggsave(filename = "biomass_site_depth_year.eps",plot = biomass_site_depth_year, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+prey_bio_site <-ggplot(data = mean_preyfish, aes(x = site, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean biomass (g)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + theme(axis.text.x = element_text(angle = 20, hjust = 1))
+prey_bio_site
+```
+
+```{r}
+preyfishsubset <- mean_preyfish %>% subset(depth == 60)
+head(preyfishsubset)
+```
+
+```{r}
+meso_prey_bio <-ggplot(data = preyfishsubset, aes(x = site, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Biomass (g)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+meso_prey_bio
+ggsave(filename = "meso_prey_bio.eps",plot = meso_prey_bio, device = "eps",width = 7,height = 4,dpi = 600)
+meso_biomass_site=aggregate(total_bio~site*year, data=preyfishsubset, FUN=mean)
+meso_biomass_site
+```
+
+```{r}
+#theme(axis.text.x = element_text(angle = 20, hjust = 1))
+meso_prey_den <-ggplot(data = preyfishsubset, aes(x = site, y=total_den, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean density (#60 m^2)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+meso_prey_den
+ggsave(filename = "meso_prey_den.eps",plot = meso_prey_den, device = "eps",width = 7,height = 4,dpi = 600)
+meso_density_site=aggregate(total_den~site*year, data=preyfishsubset, FUN=mean)
+meso_density_site
+```
+
+```{r}
+library(sciplot)
+library(car)
+library(multcompView)
+```
+
+```{r}
+preyfish_total_biomass <- aov(sqrt(sqrt(total_bio)) ~ year*site*depth, data = mean_preyfish)
+shapiro.test(preyfish_total_biomass$residuals)
+leveneTest(preyfish_total_biomass)
+summary.aov(preyfish_total_biomass)
+TukeyHSD(preyfish_total_biomass)
+```
+
+Results
+1.) Year and depth impact the biomass of prey fish 
+2.) There are sigificantly more fish in 2019 than in 2014
+3.) There are signifcantly more fish at 60m then at any other depth 
+4.) 2014-2019 at 10m and 60m prey fish biomass signifcantly increased
+
+```{r}
+herbivore_clean <- filter(mean_trophic, trophic_guild== "Herbivore")
+herbivore_total_biomass <- aov(log(sqrt(sqrt(total_bio+1))) ~ year*site*depth, data = herbivore_clean)
+shapiro.test(herbivore_total_biomass$residuals)
+summary.aov(herbivore_total_biomass)
+TukeyHSD(herbivore_total_biomass)
+```
+
+```{r}
+herb_bio_year_site <-ggplot(data = herbivore_clean, aes(x = site, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/60m^2)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+herb_bio_year_site
+herb_bio_site=aggregate(total_bio~site, data=herbivore_clean, FUN=mean)
+herb_bio_site
+```
+
+```{r}
+herb_bio_year_depth <-ggplot(data = herbivore_clean, aes(x = depth, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/60m^2)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+herb_bio_year_depth
+herb_bio_depth=aggregate(total_bio~depth*year, data=herbivore_clean, FUN=mean)
+herb_bio_depth
+```
+
+```{r}
+carnivore_clean <- filter(mean_trophic, trophic_guild== "Macrocarnivore")
+carnivore_total_biomass <- aov(sqrt(sqrt(total_bio)) ~ year*site*depth, data = carnivore_clean)
+shapiro.test(carnivore_total_biomass$residuals)
+summary.aov(carnivore_total_biomass)
+```
+
+```{r}
+planktivore_clean <- filter(mean_trophic, trophic_guild== "Planktivore")
+planktivore_total_biomass <- aov(sqrt(sqrt(total_bio)) ~ year*site*depth, data = planktivore_clean)
+shapiro.test(planktivore_total_biomass$residuals)
+summary.aov(planktivore_total_biomass)
+TukeyHSD(planktivore_total_biomass)
+plank_bio_depth=aggregate(total_bio~year, data=planktivore_clean, FUN=mean)
+plank_bio_depth
+```
+
+```{r}
+invertivore_clean <- filter(mean_trophic, trophic_guild== "Invertivore")
+invertivore_total_biomass <- aov(sqrt(sqrt(total_bio)) ~ year*site*depth, data = invertivore_clean)
+shapiro.test(invertivore_total_biomass$residuals)
+summary.aov(invertivore_total_biomass)
+TukeyHSD(planktivore_total_biomass)
+invert_bio_depth=aggregate(total_bio~site, data=invertivore_clean, FUN=mean)
+invert_bio_depth
+```
+
+```{r}
+invert_bio_year_depth <-ggplot(data = invertivore_clean, aes(x = depth, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/60m^2)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+invert_bio_year_depth
+
+```
+
+```{r}
+omnivore_clean <- filter(mean_trophic, trophic_guild== "Omnivore")
+omnivore_total_biomass <- aov(sqrt(sqrt(total_bio)) ~ year*site*depth, data = omnivore_clean)
+shapiro.test(omnivore_total_biomass$residuals)
+summary.aov(omnivore_total_biomass)
+TukeyHSD(omnivore_total_biomass)
+```
+```{r}
+omni_bio_year_depth <-ggplot(data = omnivore_clean, aes(x = year, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/60m^2)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+omni_bio_year_depth
+
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

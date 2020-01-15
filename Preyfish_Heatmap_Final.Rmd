@@ -1,0 +1,116 @@
+---
+title: "Preyfish_Heatmap_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+```
+```{r}
+bzs_preyfish <- read_csv("preyfish_2019_raw.csv")
+head(bzs_preyfish)
+bzs_preyfish_clean <- filter(bzs_preyfish, size<20, density>0, depth!=45, site!= "North Northeast")
+head(bzs_preyfish_clean)
+```
+
+```{r}
+library(dplyr)
+bzs_preyfish_final <- bzs_preyfish_clean %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+head(bzs_preyfish_final)
+```
+
+```{r}
+library(dbplyr)
+matrix_preyfish_family <- bzs_preyfish_final %>% group_by(year, site, depth, transect, family) %>% summarise(total_den = sum(density), total_bio = sum(biomass)) 
+matrix_family <- matrix_preyfish_family %>% mutate(perc_bio = total_bio/sum(total_bio), perc_den = total_den/sum(total_den))
+head(matrix_family)
+#matrix data should be used for heatmap if looking at families
+```
+```{r}
+heatmap_bio_family <- ggplot(data = matrix_family, aes(x = depth, y = family)) + geom_tile(aes(y = reorder(family, perc_bio, mean, order = TRUE), fill = perc_bio*100), color = "red4", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Reds")) +
+  ylab("Family") +
+  xlab("Depth (m)") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Biomass") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_bio_family.eps", plot = heatmap_bio_family, device = "eps",  width = 6,height = 4,dpi = 600)
+heatmap_bio_family
+ggsave(filename = "heatmap_bio_family.eps",plot = heatmap_bio_family, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+heatmap_den_family <- ggplot(data = matrix_family, aes(x = depth, y = family)) + geom_tile(aes(y = reorder(family, perc_den, mean, order = TRUE), fill = perc_den*100), color = "navy", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Blues")) +
+  ylab("Family") +
+  xlab("Depth (m)") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Density") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_den_family.eps", plot = heatmap_den_family, device = "eps",  width = 6,height = 4,dpi = 600)
+heatmap_den_family
+ggsave(filename = "heatmap_den_family.eps",plot = heatmap_den_family, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+Now lets do it with trophic guilds!
+
+```{r}
+library(dbplyr)
+matrix_preyfish_trophic <- bzs_preyfish_final %>% group_by(year, site, depth, transect, trophic_guild) %>% summarise(total_den = sum(density), total_bio = sum(biomass)) 
+matrix_trophic <- matrix_preyfish_trophic %>% mutate(perc_bio = total_bio/sum(total_bio), perc_den = total_den/sum(total_den))
+head(matrix_trophic)
+#matrix data should be used for heatmap if looking at trophic guilds
+```
+```{r}
+heatmap_bio_trophic <- ggplot(data = matrix_trophic, aes(x = depth, y = trophic_guild)) + geom_tile(aes(y = reorder(trophic_guild, perc_bio, mean, order = TRUE), fill = perc_bio*100), color = "red4", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Reds")) +
+  ylab("Trophic Guild") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Biomass") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_bio_trophic.eps", plot = heatmap_bio_trophic, width = 6,height = 4,dpi = 600)
+heatmap_bio_trophic
+```
+```{r}
+heatmap_den_trophic <- ggplot(data = matrix_trophic, aes(x = depth, y = trophic_guild)) + geom_tile(aes(y = reorder(trophic_guild, perc_den, mean, order = TRUE), fill = perc_den*100), color = "navy", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Blues")) +
+  ylab("Trophic Guild") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Density") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_den_trophic.eps", plot = heatmap_den_trophic, device = "eps",  width = 6,height = 4,dpi = 600)
+heatmap_den_trophic
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

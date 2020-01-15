@@ -1,0 +1,112 @@
+---
+title: "Lionfish_Laboratory_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+lionfish.lab=read.csv('Lionfish.Lab.csv')
+lionfish.length <- lionfish.lab %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+female=read.csv('female.data.csv')
+female.lab <- female %>%
+  mutate(stage=as.factor(stage)) 
+```
+
+```{r}
+lion_standard_depth <-ggplot(data = lionfish.length, aes(x = depth, y=standard, fill = depth)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Standard length (cm)", x = "Depth (m)") + scale_x_discrete() + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "YlGnBu") +theme_classic()+ theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lion_standard_depth
+lionfish_depth=aggregate(standard~depth, data=lionfish.length, FUN=mean)
+lionfish_depth
+```
+
+```{r}
+lion_standard_site <-ggplot(data = lionfish.length, aes(x = site, y=standard, fill = site)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Standard length (cm)", x = "Site") + scale_x_discrete() + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "YlGnBu") +theme_classic()+ theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lion_standard_site
+lionfish_site=aggregate(standard~site, data=lionfish.length, FUN=mean)
+lionfish_site
+```
+
+```{r}
+depth_site_length <- aov((standard) ~  depth * site, data = lionfish.length)
+shapiro.test(depth_site_length$residuals) #met, p=0.6
+summary.aov(depth_site_length)
+```
+
+Results
+1.) Depth and site do not impact the length of lionfish 
+2.) Even size class across the entire north shore reef platform 
+3.) Suggests that we are not seeing evidence of an ontogenic migration or environmental impact on length of lionfish 
+
+```{r}
+lion_standard_sex <-ggplot(data = sex.lab, aes(x = sex, y=standard, fill = sex)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Standard length (cm)", x = "Sex") + scale_x_discrete() + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "YlGnBu") +theme_classic()+ theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lion_standard_sex
+lionfish_sex=aggregate(standard~sex, data=lionfish.length, FUN=mean)
+lionfish_sex
+```
+
+```{r}
+sex.length <- aov(standard ~  sex, data = lionfish.length)
+shapiro.test(sex.length$residuals) #met, p=0.3644
+summary.aov(sex.length) 
+TukeyHSD(sex.length) 
+```
+
+Results
+1.) Males significantly larger than females
+
+```{r}
+female_stage <-ggplot(data = female.lab, aes(x = stage, y=density, fill = stage)) + geom_bar(stat = "summary", position = "dodge", color = "black") + labs(y = "Female Lionfish Density", x = "Reproductive stage") + scale_x_discrete()  + scale_fill_brewer(palette = "YlGnBu") +theme_classic()+ theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+female_stage
+#lionfish_female=aggregate(standard~stage, data=female.lab, FUN=mean)
+#lionfish_female
+```
+```{r}
+
+```
+
+
+```{r}
+length_stage <- aov((standard) ~  stage, data = female.lab)
+shapiro.test(length_stage$residuals) #met, p=0.6701
+summary.aov(length_stage)
+```
+
+Results
+1.) Reproductive stage (not to do with life stage- but rather what stage they are at in egg production) does not significantly affect size 
+2.) Suggests that lionfish rapidly grow to around 20-25 cm then stay at that length through all cycles of reproduction- grow fast and constantly reproduce 
+
+```{r}
+(length_histogram<- ggplot(lionfish.length, aes(x=standard, color=sex)) + geom_histogram(aes(y=..density..), binwidth=2, color= "darkblue", fill="lightblue",alpha=0.5, position="dodge") + geom_density(alpha=.2, fill= "white") +theme_classic() + theme(legend.position="top") + labs(y = "Lionfish Density", x = "Standard Length (cm)") + scale_color_brewer(palette="Set1"))
+length_histogram
+ggsave(filename = "length_histogram.eps",plot = length_histogram, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
