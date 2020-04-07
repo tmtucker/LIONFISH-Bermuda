@@ -34,18 +34,6 @@ ggsave(filename = "lionfish_depth_year.eps",plot = lionfish_depth_year, device =
 lion_depth=aggregate(per.hec~depth, data=site, FUN=mean)
 lion_depth
 ```
-```{r}
-library(sciplot)
-library(car)
-library(multcompView)
-```
-
-```{r}
-lionfish_depth <- aov(sqrt(sqrt(log(log(per.hec+1)))) ~ depth, data = site)
-shapiro.test(lionfish_depth$residuals)
-summary.aov(lionfish_depth)
-TukeyHSD(lionfish_depth)
-```
 
 
 ```{r}
@@ -86,10 +74,6 @@ ggsave(filename = "lionfish_transect_60m.eps",plot = lionfish_transect_60m, devi
 lion_transect=aggregate(density~site*year, data=transect, FUN=mean)
 lion_transect
 ```
-```{r}
-anovatransect <- aov(density ~ site, data = transect)
-summary(anovatransect)
-```
 
 ```{r}
 library(sciplot)
@@ -100,11 +84,23 @@ library(multcompView)
 ```{r}
 shapiro.test(site$per.h)
 qqPlot(site$per.h)
-model_new=glm(formula=per.h~ depth + site + year, family = Gamma(link=log), data=site)
-summary(model_new)
+model_hectare=glm(formula=per.h~ depth + site + year, family = Gamma(link=log), data=site)
+summary(model_hectare)
 ```
 
+```{r}
+shapiro.test(site$per.q)
+qqPlot(site$per.q)
+model_quad=glm(formula=per.q~ depth + site + year, family = Gamma(link=log), data=site)
+summary(model_quad)
+```
 
+```{r}
+shapiro.test(transect$den)
+qqPlot(transect$den)
+model_trans=glm(formula=den~ site + year, family = Gamma(link=log), data=transect)
+summary(model_trans)
+```
 
 ## R Markdown
 
