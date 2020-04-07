@@ -57,6 +57,12 @@ diversity_depth
 ```
 
 ```{r}
+diversity_anova <- aov(sqrt(diversity) ~ year * depth, data = preyfish_diversity)
+shapiro.test(diversity_anova$residuals)
+summary.aov(diversity_anova)
+```
+
+```{r}
 mean_richness_depth <-ggplot(data = preyfish_richness, aes(x = depth, y=richness, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Richness", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
 mean_richness_depth
 ggsave(filename = "mean_richness_depth.eps",plot = mean_richness_depth, device = "eps",width = 6,height = 4,dpi = 600)
@@ -88,7 +94,11 @@ richness_year=aggregate(richness~year, data=preyfish_richness, FUN=mean)
 richness_year
 ```
 
-
+```{r}
+richness_anova <- aov(sqrt(richness) ~ year * depth, data = preyfish_richness)
+shapiro.test(richness_anova$residuals)
+summary.aov(richness_anova)
+```
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.

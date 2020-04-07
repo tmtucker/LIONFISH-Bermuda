@@ -86,6 +86,10 @@ ggsave(filename = "lionfish_transect_60m.eps",plot = lionfish_transect_60m, devi
 lion_transect=aggregate(density~site*year, data=transect, FUN=mean)
 lion_transect
 ```
+```{r}
+anovatransect <- aov(density ~ site, data = transect)
+summary(anovatransect)
+```
 
 ```{r}
 library(sciplot)
@@ -93,16 +97,13 @@ library(car)
 library(multcompView)
 ```
 
-
-
 ```{r}
-lionfish.model= glm(per.hec~site*depth, data=site)
-summary(lionfish.model)
-site.model= glm(per.hec~year*site, data=site)
-summary(site.model)
-depth.model= glm(per.hec~year*depth, data=site)
-summary(depth.model)
+shapiro.test(site$per.h)
+qqPlot(site$per.h)
+model_new=glm(formula=per.h~ depth + site + year, family = Gamma(link=log), data=site)
+summary(model_new)
 ```
+
 
 
 ## R Markdown
