@@ -41,6 +41,20 @@ head(preyfish_diversity)
 ```
 
 ```{r}
+(diversity<-ggplot(preyfish_diversity, aes(year, diversity)) + geom_bar(aes(fill = depth, alpha = year), position = "dodge", stat = "summary", fun.y = "mean", color = "black") + labs(y = "Mean Species Diversity (Shannon Index)", x = "") + stat_summary(geom = "errorbar", fun.data = mean_se)+
+  scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") +
+  facet_grid(as.character(depth)~site)  + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)))
+ggsave(filename = "Diversity.png",plot = diversity,width = 7,height = 5,dpi = 600)
+```
+
+```{r}
+(richness<-ggplot(preyfish_richness, aes(year, richness)) + geom_bar(aes(fill = depth, alpha = year), position = "dodge", stat = "summary", fun.y = "mean", color = "black") + labs(y = "Mean Species Richness", x = "") + stat_summary(geom = "errorbar", fun.data = mean_se)+
+  scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") +
+  facet_grid(as.character(depth)~site)  + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)))
+ggsave(filename = "Richness.png",plot = richness,width = 7,height = 5,dpi = 600)
+```
+
+```{r}
 mean_diversity_depth <-ggplot(data = preyfish_diversity, aes(x = depth, y=diversity, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Species Diversity (Shannon Index)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
 mean_diversity_depth
 ggsave(filename = "mean_diversity_depth.eps",plot = mean_diversity_depth, device = "eps",width = 6,height = 4,dpi = 600)
@@ -57,7 +71,7 @@ diversity_depth
 ```
 
 ```{r}
-diversity_anova <- aov(sqrt(diversity) ~ year * depth, data = preyfish_diversity)
+diversity_anova <- aov(diversity ~ year * depth, data = preyfish_diversity)
 shapiro.test(diversity_anova$residuals)
 summary.aov(diversity_anova)
 ```
@@ -99,6 +113,13 @@ richness_anova <- aov(sqrt(richness) ~ year * depth, data = preyfish_richness)
 shapiro.test(richness_anova$residuals)
 summary.aov(richness_anova)
 ```
+```{r}
+model_10=glm(formula=diversity~ site * depth * year, data=preyfish_diversity)
+summary(model_10)
+```
+
+
+
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.

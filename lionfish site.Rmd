@@ -1,0 +1,186 @@
+---
+title: "Lionfish site"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Desktop/LIONFISH_Berm")
+library(sciplot)
+library(car)
+library(multcompView)
+library(ggplot2)
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+library(tidyr)
+library(nlme)
+library(multcomp)
+library(lsmeans)
+library(lmerTest)
+library(TukeyC)
+lion.site.data=read.csv('lion.site.csv')
+lion.site.data$survey=as.character(as.numeric(lion.site.data$survey))
+lion.site.data$survey.depth=as.character(as.numeric(lion.site.data$survey.depth))
+lionfish_clean <- filter(lion.site.data, site!= "North Northeast")
+lionfish_thirty_sixty<- filter(lionfish_clean, survey.depth!= "20")
+lionfish_sixty<- filter(lionfish_thirty_sixty, survey.depth!= "30")
+lion.transect=read.csv('2019_lionfish.csv')
+lion.transect$survey=as.character(as.numeric(lion.transect$survey))
+lion.transect$depth=as.character(as.numeric(lion.transect$depth))
+lionfish_transect <- filter(lion.transect, site!= "North Northeast")
+```
+
+```{r}
+(p1<-ggplot(lionfish_clean, aes(as.factor(survey), per.hec)) + geom_bar(aes(fill = survey.depth, alpha = survey), position = "dodge", stat = "summary", fun.y = "mean", color = "black") + labs(y = "Lionfish per Ha", x = "") + stat_summary(geom = "errorbar", fun.data = mean_se)+
+  scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") +
+  facet_grid(as.character(survey.depth)~site)  + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)))
+ggsave(filename = "LION_plot1.png",plot = p1,width = 7,height = 5,dpi = 600)
+```
+```{r}
+(p2<-ggplot(data = lionfish_clean, aes(x = survey.depth, y=per.hec, fill = survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)))
+ggsave(filename = "LION_plot2.png",plot = p2,width = 6,height = 4,dpi = 600)
+```
+
+Results
+1.) Depth signifcantly impacts lionfish density
+2.) 20-30m there is no difference, but there is a differnece between 20-60 and 30-60.
+-- planktivorous fish, upwelling, supports other paper
+3.) Survey year does not signifcantly impact lionfish density
+-- culling/low temperature affecting reproductive time cycle- keeping their population lower
+4.) The interaction between survey year and depth does not impact lionfish density 
+
+
+```{r}
+anovalion <- aov(sqrt(log(per.hec+1))~ survey * survey.depth, data = lion.site.data)
+shapiro.test(anovalion$residuals) #not met, p=0.01622
+leveneTest(anovalion) #met, p=0.101
+summary.aov(anovalion)
+TukeyHSD(anovalion)
+```
+
+```{r}
+#stat_summary(aes(label=..y..), fun.y=mean, geom="text", size=5, position = position_dodge(0.85), vjust = -0.5) = how to show the means
+(p3<-ggplot(data = lionfish_clean, aes(x = site, y=per.h, fill= survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black")
++ labs(y = "Mean density (#/30 m^2)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + theme(axis.text.x = element_text(angle = 20, hjust = 1)))
+ggsave(filename = "LION_plot3.png",plot = p3,width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+lion.site.final=read.csv('lionfish_site_final.csv')
+lion.site.final$survey=as.character(as.numeric(lion.site.final$survey))
+lion.site.final$survey.depth=as.character(as.numeric(lion.site.final$survey.depth))
+```
+
+```{r}
+(p4<-ggplot(data = lion.site.final, aes(x = site, y=per.h, fill= survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black")
++ labs(y = "Lionfish per Ha", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + theme(axis.text.x = element_text(angle = 20, hjust = 1)))
+ggsave(filename = "LION_plot.png",plot = p4,width = 6,height = 4,dpi = 600)
+p4
+lion_site_final=aggregate(per.h~site*survey, data=lion.site.final, FUN=mean)
+lion_site_final
+```
+
+```{r}
+#model = lme(density ~ survey, random = ~1|site, data=lion.transect, method= "REML")
+#anova.lme(model, type= "sequential", adjustSigma = FALSE)
+
+anovatransect <- aov(density ~ survey + Error(site), data = lion.transect)
+summary(anovatransect)
+```
+```{r}
+library(sciplot)
+library(car)
+library(multcompView)
+site <- lionfish_clean %>%
+  mutate(survey=as.factor(survey)) %>% mutate(survey.depth=as.factor(survey.depth))
+```
+```{r}
+shapiro.test(site$per.h)
+qqPlot(site$per.h)
+model_1=glm(formula=per.h~ survey.depth * survey, data=site)
+summary(model_1)
+summary(glht(model_1, mcp(site="Tukey")))
+site_60 <- filter(site, survey.depth==60)
+model_2=glm(formula=per.h~ survey * site, data=site)
+summary(model_2)
+model_3=glm(formula=density~ survey * site, data=lionfish_transect)
+summary(model_3)
+```
+
+
+```{r}
+lionfish_site_year_depth <-ggplot(data= site, aes(x= survey, y= per.hec, fill= survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "") + stat_summary(geom = "errorbar", fun.data = mean_se) + scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") + facet_grid(survey.depth~site) + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_site_year_depth
+ggsave(filename = "lionfish_site_year_depth.eps",plot = lionfish_site_year_depth, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+lionfish_depth_year <-ggplot(data = site, aes(x = survey.depth, y=per.hec, fill = survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_depth_year
+ggsave(filename = "lionfish_depth_year.eps",plot = lionfish_depth_year, device = "eps",width = 6,height = 4,dpi = 600)
+lion_depth=aggregate(per.hec~depth, data=site, FUN=mean)
+lion_depth
+```
+
+
+```{r}
+lionfish_year <-ggplot(data = site, aes(x = site, y=per.quad, fill = survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Location") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_year
+lion_year=aggregate(per.hec~year*depth, data=site, FUN="mean")
+lion_year
+```
+
+```{r}
+lionfish_site_year <-ggplot(data = site, aes(x = site, y=per.hec, fill = survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Location") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_site_year
+ggsave(filename = "lionfish_site_year.eps",plot = lionfish_site_year, device = "eps",width = 7,height = 4,dpi = 600)
+lion_site=aggregate(per.hec~site*year, data=site, FUN=mean)
+lion_site
+```
+```{r}
+site_sixty_clean <- filter(site_clean, depth=="60") %>%
+  mutate(year=as.factor(year))
+lionfish_site_sixty <-ggplot(data = site_sixty_clean, aes(x = site, y=per.hec, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+lionfish_site_sixty
+ggsave(filename = "lionfish_site_sixty.eps",plot = lionfish_site_sixty, device = "eps",width = 8,height = 4,dpi = 600)
+lion_sixty=aggregate(per.hec~site*year, data=site_sixty_clean, FUN=mean)
+lion_sixty
+```
+
+```{r}
+lion.transect=read.csv('lionfish_den_60m.csv')
+transect_clean <- filter(lion.transect, site!= "North Northeast")
+transect <- transect_clean %>%
+  mutate(year=as.factor(survey))
+```
+
+```{r}
+lionfish_transect_60m <-ggplot(data = lionfish_transect, aes(x = site, y=density, fill= survey)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") +labs(y = "Mean Density (#/60 m^2)", x = "Location") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) + theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) 
+lionfish_transect_60m
+ggsave(filename = "lionfish_transect_60m.eps",plot = lionfish_transect_60m, device = "eps",width = 7,height = 4,dpi = 600)
+lion_transect=aggregate(density~site*year, data=transect, FUN=mean)
+lion_transect
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -1,0 +1,59 @@
+---
+title: "Lionfish_Density Map_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+map=read.csv('map.csv')
+map_clean <- filter(map, site!= "North Northeast")
+lion.quad.data=read.csv('lionfish_quadrat.csv')
+```
+
+```{r}
+head(map_clean)
+plot(map_clean$long, map_clean$lat, pch = 19, cex = log(map_clean$lionfish+1))
+
+max(map_clean$lionfish)
+```
+
+```{r}
+library(ggplot2)
+lionfish_map <- ggplot(data=map_clean, aes(x=long, y=lat, color = "red", size = lionfish)) + xlim(-65, -64.55) + ylim(32.1, 32.6) +geom_point(aes(colour = cut(lionfish, c(-Inf, 0, Inf)))) +scale_fill_gradientn(colours=c("blue", "red"), breaks=c(-2,0)) + scale_size_area(max_size = 25) + theme_classic()  #theme(legend.position = "none") 
+lionfish_map
+ggsave(filename = "lionfish_map.eps",plot = lionfish_map, device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+
+```{r}
+library(ggplot2)
+lionfish_quadrat_map <- ggplot(data=lion.quad.data, aes(x=long, y=lat, color = "red", size = lionfish)) + xlim(-65, -64.55) + ylim(32.1, 32.6) +geom_point(aes(colour = cut(lionfish, c(-Inf, 0, Inf)))) +scale_fill_gradientn(colours=c("blue", "red"), breaks=c(-2,0)) + scale_size_area(max_size = 25) + theme_classic()  #theme(legend.position = "none") 
+lionfish_quadrat_map
+ggsave(filename = "lionfish_quadrat_map.eps",plot = lionfish_quadrat_map, device = "eps",width = 6,height = 4,dpi = 600)
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -8,6 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+setwd("~/Desktop/LIONFISH_Berm")
 library(tidyverse)
 library(readxl)
 library(janitor)
@@ -15,7 +16,7 @@ library(dbplyr)
 ```
 
 ```{r}
-lion.site=read.csv('lionfish.site.csv')
+lion.site.data=read.csv('lion.site.csv')
 site_clean <- filter(lion.site, site!= "North Northeast")
 site <- site_clean %>%
   mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
@@ -52,7 +53,7 @@ lion_site
 ```
 ```{r}
 site_sixty_clean <- filter(site_clean, depth=="60") %>%
-  mutate(year=as.factor(survey))
+  mutate(year=as.factor(year))
 lionfish_site_sixty <-ggplot(data = site_sixty_clean, aes(x = site, y=per.hec, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Lionfish per Ha", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
 lionfish_site_sixty
 ggsave(filename = "lionfish_site_sixty.eps",plot = lionfish_site_sixty, device = "eps",width = 8,height = 4,dpi = 600)
@@ -84,16 +85,14 @@ library(multcompView)
 ```{r}
 shapiro.test(site$per.h)
 qqPlot(site$per.h)
-model_hectare=glm(formula=per.h~ depth + site + year, family = Gamma(link=log), data=site)
-summary(model_hectare)
+model_1=glm(formula=per.h~ depth + year + site, family = Gamma(link=log), data=site)
+summary(model_1)
+summary(glht(model_1, mcp(site="Tukey")))
+site_60 <- filter(site, depth==60)
+model_2=glm(formula=per.h~ year * site, family = Gamma(link=log), data=site_60)
+summary(model_2)
 ```
 
-```{r}
-shapiro.test(site$per.q)
-qqPlot(site$per.q)
-model_quad=glm(formula=per.q~ depth + site + year, family = Gamma(link=log), data=site)
-summary(model_quad)
-```
 
 ```{r}
 shapiro.test(transect$den)
